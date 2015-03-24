@@ -34,13 +34,13 @@
 
     //BEN - setup for detection
     this.canvas2 = document.createElement('canvas');
-    this.canvas2.width = 320;
-    this.canvas2.height = 240;
+    this.canvas2.width = 640;
+    this.canvas2.height = 360;
     this.ctx2 = this.canvas2.getContext('2d');
     //$("body")[0].appendChild(this.canvas2);
     this.raster = new NyARRgbRaster_Canvas2D(this.canvas2);
     console.log(this.raster);
-    this.param = new FLARParam(320, 240); //320,240
+    this.param = new FLARParam(640, 360); //320,240
 
     this.resultMat = new NyARTransMatResult();
 
@@ -95,7 +95,7 @@
 
     // only send the update when we can actually get a frame into the canvas
     window.requestAnimationFrame(function() {
-      outThis.ctx2.drawImage(outThis.canvas, 0,0,320,240);
+      outThis.ctx2.drawImage(outThis.canvas, 0,0,640,360);
       outThis.canvas2.changed = true;
       var detected = outThis.detector.detectMarkerLite(outThis.raster, 128);
       for (var idx = 0; idx<detected; idx++) {
