@@ -63,8 +63,8 @@
       tracker.crosshairs.style.display = 'none';
       tracker.disable();
 
-      window.cockpit.socket.emit("/tracker/stop", {
-        action : 'stop'
+      window.cockpit.socket.emit("/tracker/lost", {
+        action : 'lost'
       });
     });
   };
