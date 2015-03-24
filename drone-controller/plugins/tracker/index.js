@@ -49,7 +49,7 @@ function tracker(name, deps) {
     }
   }
 
-  setTimeout(replay, 5000);
+  //setTimeout(replay, 5000);
 
   var INTERVAL = 300;
 

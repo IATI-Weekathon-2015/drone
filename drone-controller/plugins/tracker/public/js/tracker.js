@@ -31,6 +31,22 @@
       tracker.setTrackingCoords(event.offsetX, event.offsetY);
     });
 
+
+    //BEN - setup for detection
+    this.canvas2 = document.createElement('canvas');
+    this.canvas2.width = 320;
+    this.canvas2.height = 240;
+    this.ctx2 = this.canvas2.getContext('2d');
+    //$("body")[0].appendChild(this.canvas2);
+    this.raster = new NyARRgbRaster_Canvas2D(this.canvas2);
+    console.log(this.raster);
+    this.param = new FLARParam(320, 240); //320,240
+
+    this.resultMat = new NyARTransMatResult();
+
+    this.detector = new FLARMultiIdMarkerDetector(this.param, 120);
+    this.detector.setContinueMode(true);
+
     this.enabled = false;
     this.observers = {};
     this.locked = false;
@@ -40,18 +56,8 @@
     this.crosshairs.style.display = 'none';
 
     this.on('points', function(data) {
-      tracker.crosshairs.style.left = (data[0].x - 83) + 'px';
-      tracker.crosshairs.style.top = (data[0].y - 83 ) + 'px';
-      tracker.crosshairs.style.display = 'block';
-
-      console.log(data[0]);
-
-      window.cockpit.socket.emit("/tracker/horizontal-fix", {
-        data: tracker.canvas.clientWidth/2 - data[0].x
-      });
-      window.cockpit.socket.emit("/tracker/vertical-fix", {
-        data: tracker.canvas.clientHeight/2 - data[0].y
-      });
+      console.log("POINTS: ", data[0].x, data[0].y, data[0].z);
+      window.cockpit.socket.emit("/tracker/update", data);
     });
 
     this.on('locked', function() {
@@ -67,6 +73,8 @@
         action : 'lost'
       });
     });
+
+    this.enable();
   };
 
   Tracker.prototype.prepareTrackingBuffer = function() {
@@ -83,54 +91,25 @@
   };
 
   Tracker.prototype.update = function(frameBuffer) {
-    var tmpXY,
-      tmpPyramid,
-      roundedX,
-      roundedY;
+    var outThis = this;
 
-    if (true !== this.enabled) {
-      return;
-    }
-    tmpXY = this.newXY;
-    this.newXY = this.oldXY;
-    this.oldXY = tmpXY;
-
-    tmpPyramid = this.newPyramid;
-    this.newPyramid = this.oldPyramid;
-    this.oldPyramid = tmpPyramid;
-
-    this.trackFlow(frameBuffer);
-
-    if (this.point_status[0] == 1) {
-      roundedX = Math.round(
-        this.newXY[0] * this.canvas.clientWidth / this.frameWidth
-      );
-      roundedY = Math.round(
-        this.newXY[1] * this.canvas.clientHeight / this.frameHeight
-      );
-      if (
-        (!this.locked) ||
-        (roundedX !== this.oldRoundedX) ||
-        (roundedY !== this.oldRoundedY)
-      ) {
-        this.oldRoundedX = roundedX;
-        this.oldRoundedY = roundedY;
-        this.emit('points', [{
-          x: roundedX,
-          y: roundedY
+    // only send the update when we can actually get a frame into the canvas
+    window.requestAnimationFrame(function() {
+      outThis.ctx2.drawImage(outThis.canvas, 0,0,320,240);
+      outThis.canvas2.changed = true;
+      var detected = outThis.detector.detectMarkerLite(outThis.raster, 128);
+      for (var idx = 0; idx<detected; idx++) {
+        var id = outThis.detector.getIdMarkerData(idx);
+        outThis.detector.getTransformMatrix(idx, outThis.resultMat);
+        //console.log("resultMat", outThis.resultMat.m03, outThis.resultMat.m13, outThis.resultMat.m23);
+        outThis.emit('points', [{
+            x: Math.round(outThis.resultMat.m03),
+            y: Math.round(outThis.resultMat.m13),
+            z: Math.round(outThis.resultMat.m23)
         }]);
       }
-      if (!this.locked) {
-        this.emit('locked');
-      }
-      this.locked = true;
-    } else {
-      if (this.locked) {
-        this.emit('lost');
-      }
-      this.locked = false;
-    }
-    this.emit('done');
+      outThis.emit('done'); // request to bind to the next frame
+    });
   };
 
   Tracker.prototype.setTrackingCoords = function(x, y) {
