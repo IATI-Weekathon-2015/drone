@@ -3,7 +3,7 @@
 
   var Tracker = function Tracker(cockpit) {
     var tracker = this;
-    console.log('Loading Tracker plugin');
+    //console.log('Loading Tracker plugin');
     this.cockpit = cockpit;
 
     this.frameWidth = 640;
@@ -22,7 +22,7 @@
       console.error('Did not find required dronestream canvas');
       return;
     }
-    console.log('found canvas, width/height:', this.canvas.clientWidth, this.canvas.clientHeight);
+    //console.log('found canvas, width/height:', this.canvas.clientWidth, this.canvas.clientHeight);
 
     // add click-handler
     $('#cockpit').append('<div id="tracker"></div>');
@@ -39,7 +39,7 @@
     this.ctx2 = this.canvas2.getContext('2d');
     //$("body")[0].appendChild(this.canvas2);
     this.raster = new NyARRgbRaster_Canvas2D(this.canvas2);
-    console.log(this.raster);
+    //console.log(this.raster);
     this.param = new FLARParam(640, 360); //320,240
 
     this.resultMat = new NyARTransMatResult();
@@ -57,27 +57,27 @@
 
     var latestUpdate;
     this.on('points', function(data) {
-      console.log("POINTS: ", data[0].x, data[0].y, data[0].z);
+      //console.log("POINTS: ", data[0].x, data[0].y, data[0].z);
       latestUpdate = data[0];
     });
 
     function updatePilot() {
       if (latestUpdate) {
-        console.log('sending updates to the server:', latestUpdate);
+        //console.log('sending updates to the server:', latestUpdate);
         window.cockpit.socket.emit("/tracker/update", latestUpdate);
       }
-      console.log('nothing change');
+      //console.log('nothing change');
       setTimeout(updatePilot, 200);
     }
 
     updatePilot();
 
     this.on('locked', function() {
-      console.log('target acquired');
+      //console.log('target acquired');
     });
 
     this.on('lost', function() {
-      console.log('target lost');
+      //console.log('target lost');
       tracker.crosshairs.style.display = 'none';
       tracker.disable();
 
@@ -130,7 +130,7 @@
     // translate from (stretched) canvas to framebuffer dimensions:
     this.newXY[0] = x * this.frameWidth / this.canvas.clientWidth;
     this.newXY[1] = y * this.frameHeight / this.canvas.clientHeight;
-    console.log('New tracking coords:', [x, y], this.newXY);
+    //console.log('New tracking coords:', [x, y], this.newXY);
     this.enable();
   };
 

@@ -37,7 +37,7 @@ function tracker(name, deps) {
 
       return setTimeout(replay, 2500);
     }
-    console.log('replay');
+    //console.log('replay');
     for (var i = 0; i < 7; i++) {
       commands.shift();
     }
@@ -72,7 +72,7 @@ function tracker(name, deps) {
 
     latestData = data;
 
-    console.log('updating drone position:', data);
+    //console.log('updating drone position:', data);
     if (!data) return;
 
     if (isFirst) {
@@ -94,9 +94,9 @@ function tracker(name, deps) {
     var gx = state.x + Math.cos(state.yaw) * newX;
     var gy = state.y + Math.sin(state.yaw) * newX;
 
-    console.log('newY:', newY);
-    console.log('newX:', newX);
-    console.log('newYaw:', newYaw);
+    //console.log('newY:', newY);
+    //console.log('newX:', newX);
+    //console.log('newYaw:', newYaw);
 
     controller.go({
       y: gy,
