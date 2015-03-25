@@ -4,8 +4,8 @@ var replayCoords = require('../../replay-coords');
 function tracker(name, deps) {
   var controller = autonomy.control(deps.client);
 
-  //7000x / 3000sm = 25x/sm
-  //3000y / 1500sm = 2y/sm
+  // 1400x / 3m = 466x/m
+  // 900y / 1.5m = 600y/m
 
   var commands = replayCoords.coords.map(function(coord) {
     return function() {
@@ -51,75 +51,48 @@ function tracker(name, deps) {
 
   //setTimeout(replay, 5000);
 
-  var INTERVAL = 300;
-
-  var isActive = false;
-  var intervalHandler;
-
-  var verticalFix, horizontalFix;
-
   deps.io.sockets.on('connection', function(socket) {
-
-    socket.on('/tracker/vertical-fix', function(cmd) {
-      if (!isActive) startTracking();
-      verticalFix = cmd.data;
-    });
-
-    socket.on('/tracker/horizontal-fix', function(cmd) {
-      if (!isActive) startTracking();
-      horizontalFix = cmd.data;
-    });
-
-    socket.on('/tracker/lost', function() {
-      horizontalFix = verticalFix = 0;
-      stopTracking();
+    socket.on('/tracker/update', function(data) {
+      //console.log('received tracker/update:', data);
+      updateDronePosition(data);
     });
   });
 
-  function updatePosition() {
-    if (!updateHorizontalPosition() && !updateVerticalPosition()) {
-      stopTracking();
-    }
-  }
-
-  function updateVerticalPosition() {
-    if (verticalFix > 40) {
-      //deps.client.up(0.05);
-      controller.up(Math.abs(verticalFix / 1000));
-      return true;
-    } else if (verticalFix < -40) {
-      //deps.client.down(0.05);
-      controller.down(Math.abs(verticalFix / 1000));
-      return true;
+  var latestData = {};
+  function updateDronePosition(data) {
+    if (data.x === latestData.x &&
+      data.y === latestData.y &&
+      data.z === latestData.z
+    ) {
+      return;
     }
 
-    return false;
-  }
+    latestData = data;
 
-  function updateHorizontalPosition() {
-    if (horizontalFix > 50) {
-      //deps.client.left(0.05);
-      controller.left(Math.abs(horizontalFix / 600));
-      return true;
-    } else if (horizontalFix < -50) {
-      //deps.client.right(0.05);
-      controller.right(Math.abs(horizontalFix / 600));
-      return true;
+    console.log('updating drone position:', data);
+    if (!data) return;
+
+    if (isFirst) {
+      controller.zero();
+      isFirst = false;
     }
 
-    return false;
-  }
+    var root = Math.sqrt(Math.pow(data.x, 2) + Math.pow(data.z, 2));
+    var sinAngle = data.x / root;
 
-  function stopTracking() {
-    console.log('stop');
-    deps.client.stop();
-    //clearInterval(intervalHandler);
-    //isActive = false;
-  }
+    var state = controller.state();
+    var newY = data.x / 700;
+    var newX = (data.z - 500) / 1000;
+    var newYaw = state.yaw.toDeg() + sinAngle.toDeg();
 
-  function startTracking() {
-    intervalHandler = setInterval(updatePosition, INTERVAL);
-    isActive = true;
+    console.log('newY:', newY);
+    console.log('newYaw:', newYaw);
+    controller.go({
+      y: newY, // horizontal
+      z: state.z,
+      x: newX,
+      yaw: newYaw
+    });
   }
 }
 

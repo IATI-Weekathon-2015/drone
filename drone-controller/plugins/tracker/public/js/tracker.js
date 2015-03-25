@@ -55,10 +55,22 @@
     this.crosshairs = $('#tracker-crosshairs').get(0);
     this.crosshairs.style.display = 'none';
 
+    var latestUpdate;
     this.on('points', function(data) {
       console.log("POINTS: ", data[0].x, data[0].y, data[0].z);
-      window.cockpit.socket.emit("/tracker/update", data);
+      latestUpdate = data[0];
     });
+
+    function updatePilot() {
+      if (latestUpdate) {
+        console.log('sending updates to the server:', latestUpdate);
+        window.cockpit.socket.emit("/tracker/update", latestUpdate);
+      }
+      console.log('nothing change');
+      setTimeout(updatePilot, 200);
+    }
+
+    updatePilot();
 
     this.on('locked', function() {
       console.log('target acquired');
@@ -70,7 +82,7 @@
       tracker.disable();
 
       window.cockpit.socket.emit("/tracker/lost", {
-        action : 'lost'
+        action: 'lost'
       });
     });
 
@@ -95,17 +107,17 @@
 
     // only send the update when we can actually get a frame into the canvas
     window.requestAnimationFrame(function() {
-      outThis.ctx2.drawImage(outThis.canvas, 0,0,640,360);
+      outThis.ctx2.drawImage(outThis.canvas, 0, 0, 640, 360);
       outThis.canvas2.changed = true;
       var detected = outThis.detector.detectMarkerLite(outThis.raster, 128);
-      for (var idx = 0; idx<detected; idx++) {
+      for (var idx = 0; idx < detected; idx++) {
         var id = outThis.detector.getIdMarkerData(idx);
         outThis.detector.getTransformMatrix(idx, outThis.resultMat);
         //console.log("resultMat", outThis.resultMat.m03, outThis.resultMat.m13, outThis.resultMat.m23);
         outThis.emit('points', [{
-            x: Math.round(outThis.resultMat.m03),
-            y: Math.round(outThis.resultMat.m13),
-            z: Math.round(outThis.resultMat.m23)
+          x: Math.round(outThis.resultMat.m03),
+          y: Math.round(outThis.resultMat.m13),
+          z: Math.round(outThis.resultMat.m23)
         }]);
       }
       outThis.emit('done'); // request to bind to the next frame
