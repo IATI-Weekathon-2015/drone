@@ -88,7 +88,7 @@ function tracker(name, deps) {
 
     var newY = data.x / HORIZONTAL_FACTOR; // horizontal
     var newX = (data.z - DESIRED_DISTANCE) / 1000; // distance
-    var newYaw = state.yaw.toDeg() + sinAngle.toDeg(); // angel
+    var newYaw = state.yaw.toDeg() + Math.asin(sinAngle).toDeg(); // angle
 
     // Remap our target position in the world coordinates
     var gx = state.x + Math.cos(state.yaw) * newX;
