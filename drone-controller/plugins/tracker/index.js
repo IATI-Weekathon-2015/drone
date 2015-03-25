@@ -6,6 +6,8 @@ function tracker(name, deps) {
 
   // 1400x / 3m = 466x/m
   // 900y / 1.5m = 600y/m
+  var DESIRED_DISTANCE = 1000;
+  var HORIZONTAL_FACTOR = 700;
 
   var commands = replayCoords.coords.map(function(coord) {
     return function() {
@@ -59,6 +61,7 @@ function tracker(name, deps) {
   });
 
   var latestData = {};
+
   function updateDronePosition(data) {
     if (data.x === latestData.x &&
       data.y === latestData.y &&
@@ -77,20 +80,28 @@ function tracker(name, deps) {
       isFirst = false;
     }
 
+    // calculate angle fix
     var root = Math.sqrt(Math.pow(data.x, 2) + Math.pow(data.z, 2));
     var sinAngle = data.x / root;
 
     var state = controller.state();
-    var newY = data.x / 700;
-    var newX = (data.z - 500) / 1000;
-    var newYaw = state.yaw.toDeg() + sinAngle.toDeg();
+
+    var newY = data.x / HORIZONTAL_FACTOR; // horizontal
+    var newX = (data.z - DESIRED_DISTANCE) / 1000; // distance
+    var newYaw = state.yaw.toDeg() + sinAngle.toDeg(); // angel
+
+    // Remap our target position in the world coordinates
+    var gx = state.x + Math.cos(state.yaw) * newX;
+    var gy = state.y + Math.sin(state.yaw) * newX;
 
     console.log('newY:', newY);
+    console.log('newX:', newX);
     console.log('newYaw:', newYaw);
+
     controller.go({
-      y: newY, // horizontal
-      z: state.z,
-      x: newX,
+      y: gy,
+      z: state.z, // vertical
+      x: gx,
       yaw: newYaw
     });
   }
