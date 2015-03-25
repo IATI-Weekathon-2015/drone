@@ -76,7 +76,7 @@ function tracker(name, deps) {
     if (!data) return;
 
     if (isFirst) {
-      controller.zero();
+      //controller.zero();
       isFirst = false;
     }
 
